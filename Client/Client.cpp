@@ -73,14 +73,16 @@ void Client::InternalRun(float ticks)
     }
 }
 
-void Client::SendPacket(Packet& packet)
+bool Client::SendPacket(Packet& packet)
 {
     if (send(m_socket, packet.Data(), packet.Length(), 0) == SOCKET_ERROR)
     {
         std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
         closesocket(m_socket);
         WSACleanup();
+        return false;
     }
+    return true;
 }
 
 void Client::Bind(int packetId, void(* func)(Packet&))

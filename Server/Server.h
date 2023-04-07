@@ -11,7 +11,7 @@ public:
 	~Server();
 
 	void Run(float tickSpeed);
-	void SendPacket(Packet& packet, int id);
+	bool SendPacket(Packet& packet, int id);
 	void SendPacketAll(Packet& packet);
 	void Bind(int packetId, void (*func)(Packet&, int));
 

@@ -12,7 +12,7 @@ public:
 	~Client();
 
 	void Run(float ticks);
-	void SendPacket(Packet& packet);
+	bool SendPacket(Packet& packet);
 	void Bind(int packetId, void (*func)(Packet&));
 
 private:
