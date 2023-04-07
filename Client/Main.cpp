@@ -1,5 +1,11 @@
 #include "pch.h"
+#include <iostream>
 #include "Client.h"
+
+void Test(Packet&)
+{
+    std::cout << "Server sent me something\n";
+}
 
 int main()
 {
@@ -10,6 +16,7 @@ int main()
 
     Client client{ 12345, "127.0.0.1" };
     client.Run(20.f);
+    client.Bind(777, Test);
 
     while (true)
     {

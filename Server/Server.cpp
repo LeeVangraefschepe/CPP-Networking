@@ -119,7 +119,7 @@ void Server::Bind(int packetId, void(*func)(Packet&, int))
 {
     if (m_bindings.contains(packetId))
     {
-        std::cout << "WARNING: Binding already exists and has been overwritten (" << packetId << ")\n";
+        std::cerr << "WARNING: Binding already exists and has been overwritten (" << packetId << ")\n";
     }
     std::pair key{ packetId, func };
     m_bindings.emplace(key);
@@ -192,8 +192,6 @@ void Server::HandleReceive()
             m_clients.erase(it);
             return;
         }
-
-        
 
         //Create packet core
         std::vector<char> charBuffer{ std::begin(buffer), std::end(buffer) };

@@ -82,7 +82,15 @@ void Client::SendPacket(Packet& packet)
     }
 }
 
-
+void Client::Bind(int packetId, void(* func)(Packet&))
+{
+    if (m_bindings.contains(packetId))
+    {
+        std::cerr << "WARNING: Binding already exists and has been overwritten (" << packetId << ")\n";
+    }
+    std::pair key{ packetId, func };
+    m_bindings.emplace(key);
+}
 
 void Client::HandleReceive()
 {

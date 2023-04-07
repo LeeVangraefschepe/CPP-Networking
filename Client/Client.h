@@ -10,8 +10,11 @@ class Client final
 public:
 	explicit Client(int port, const std::string& serverIp);
 	~Client();
+
 	void Run(float ticks);
 	void SendPacket(Packet& packet);
+	void Bind(int packetId, void (*func)(Packet&));
+
 private:
 	void InternalRun(float ticks);
 	void HandleReceive();
