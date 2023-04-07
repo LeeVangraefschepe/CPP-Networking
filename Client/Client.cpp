@@ -104,13 +104,13 @@ void Client::HandleReceive()
         return;
     }
 
-    // Print the response from the server
-    std::cout << "Received " << bytesReceived << " bytes from server: " << buffer.data() << std::endl;
-
     //Create packet core
     std::vector<char> charBuffer{ std::begin(buffer), std::end(buffer) };
     Packet packet{ charBuffer };
     const int header = packet.ReadHeaderID();
+
+    //Print the response from the server
+    std::cout << "Received " << bytesReceived << " bytes from client with id: " << header << std::endl;
 
     //WARNING PACKET CREATION WILL DELETE BUFFER
     for (const auto& packetId : m_bindings)
