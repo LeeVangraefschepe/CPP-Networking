@@ -1,11 +1,12 @@
 #pragma once
 #include <vector>
+#include "Packet.h"
 
 class Server
 {
 public:
 	explicit Server(int port);
-	void Run();
+	void Run(float tickSpeed);
 private:
 	void HandleIncomingConnection();
 	void HandleReceive();

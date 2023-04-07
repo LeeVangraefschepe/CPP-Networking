@@ -59,12 +59,21 @@ Server::Server(int port)
     std::cout << "Server is listening on port 12345..." << std::endl;
 }
 
-void Server::Run()
+void Server::Run(float ticks)
 {
+    const float tickTimeMs{ 1000 / ticks };
+    std::cout << "Running at " << ticks << "ticks per second\n";
+    auto end = std::chrono::high_resolution_clock::now();
 	while (true)
 	{
+        const auto currentTime = std::chrono::high_resolution_clock::now();
+        end = currentTime;
+
         HandleIncomingConnection();
         HandleReceive();
+
+        const auto sleepTimeMs = tickTimeMs - std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - currentTime).count();
+        std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(sleepTimeMs)));
 	}
 }
 
@@ -120,8 +129,8 @@ void Server::HandleReceive()
     {
         const SOCKET& clientSocket = *it;
         // Receive data from the client
-        std::array<char, 256> buffer{};
-        const int bytesReceived = recv(clientSocket, buffer.data(), buffer.size(), 0);
+        std::array<char,256> buffer{};
+        const int bytesReceived = recv(clientSocket, buffer.data(), static_cast<int>(buffer.size()), 0);
         if (bytesReceived == SOCKET_ERROR)
         {
             std::cerr << "Error receiving data: " << WSAGetLastError() << std::endl;
@@ -129,9 +138,29 @@ void Server::HandleReceive()
             m_clients.erase(it);
             return;
         }
+        if (bytesReceived == 0)
+        {
+            m_clients.erase(it);
+            return;
+        }
 
         // Print the received data
         std::cout << "Received " << bytesReceived << " bytes from client: " << buffer.data() << std::endl;
+
+        //WARNING PACKET CREATION WILL DELETE BUFFER
+        std::vector<char> charBuffer{ std::begin(buffer), std::end(buffer) };
+        Packet packet{ charBuffer };
+        auto header = packet.ReadHeaderID();
+        auto health = packet.Read<float>();
+        auto damage = packet.Read<float>();
+        auto money = packet.Read<int>();
+
+        std::cout << "header: " << header << "\n";
+        std::cout << "health: " << health << "\n";
+        std::cout << "damage: " << damage << "\n";
+        std::cout << "money: " << money << "\n";
+
+        int stop{};
 
         // Echo the data back to the client
         if (send(clientSocket, buffer.data(), bytesReceived, 0) == SOCKET_ERROR)

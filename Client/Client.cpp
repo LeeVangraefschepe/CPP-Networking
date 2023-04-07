@@ -3,7 +3,7 @@
 #include <iostream>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-
+#include "Packet.h"
 #pragma comment(lib, "ws2_32.lib")
 
 int main()
@@ -38,13 +38,14 @@ int main()
         return 1;
     }
 
+    Packet packet{ 500 };
+    packet.Write(420.69f);
+    packet.Write(69.420f);
+    packet.Write(42001);
+
     while (true)
     {
-        // Send a message to the server
-        const char* message = "Hello, server!";
-        int messageLength = strlen(message);
-
-        if (send(clientSocket, message, messageLength, 0) == SOCKET_ERROR)
+        if (send(clientSocket, packet.Data(), packet.Length(), 0) == SOCKET_ERROR)
         {
             std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
             closesocket(clientSocket);
@@ -54,7 +55,7 @@ int main()
 
         // Receive a response from the server
         std::array<char, 256> buffer{};
-        const int bytesReceived = recv(clientSocket, buffer.data(), buffer.size(), 0);
+        const int bytesReceived = recv(clientSocket, buffer.data(), static_cast<int>(buffer.size()), 0);
         if (bytesReceived == SOCKET_ERROR)
         {
             std::cerr << "Error receiving response: " << WSAGetLastError() << std::endl;
@@ -66,10 +67,10 @@ int main()
         // Print the response from the server
         std::cout << "Server response: " << buffer.data() << std::endl;
 
-        Sleep(100);
+        Sleep(1000);
     }
 
-    // Clean up
+    //Clean up
     closesocket(clientSocket);
     WSACleanup();
 
