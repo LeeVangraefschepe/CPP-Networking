@@ -77,6 +77,16 @@ void Server::Run(float ticks)
 	}
 }
 
+void Server::Bind(int packetId, void(*func)(Packet&))
+{
+    if (m_bindings.contains(packetId))
+    {
+        std::cout << "WARNING: Binding already exists and has been overwritten (" << packetId << ")\n";
+    }
+    std::pair key{ packetId, func };
+    m_bindings.emplace(key);
+}
+
 void Server::HandleIncomingConnection()
 {
     // Set up a set of sockets to monitor for incoming connections
@@ -147,20 +157,20 @@ void Server::HandleReceive()
         // Print the received data
         std::cout << "Received " << bytesReceived << " bytes from client: " << buffer.data() << std::endl;
 
-        //WARNING PACKET CREATION WILL DELETE BUFFER
+        //Create packet core
         std::vector<char> charBuffer{ std::begin(buffer), std::end(buffer) };
         Packet packet{ charBuffer };
-        auto header = packet.ReadHeaderID();
-        auto health = packet.Read<float>();
-        auto damage = packet.Read<float>();
-        auto money = packet.Read<int>();
+        const int header = packet.ReadHeaderID();
 
-        std::cout << "header: " << header << "\n";
-        std::cout << "health: " << health << "\n";
-        std::cout << "damage: " << damage << "\n";
-        std::cout << "money: " << money << "\n";
-
-        int stop{};
+        //WARNING PACKET CREATION WILL DELETE BUFFER
+        for (const auto& packetId : m_bindings)
+        {
+	        if (packetId.first == header)
+	        {
+                packetId.second(packet);
+                break;;
+	        }
+        }
 
         // Echo the data back to the client
         if (send(clientSocket, buffer.data(), bytesReceived, 0) == SOCKET_ERROR)
