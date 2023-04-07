@@ -17,7 +17,7 @@ public:
 
 private:
 	void InternalRun(float ticks);
-	void HandleReceive();
+	bool HandleReceive();
 
 	std::thread m_clientThread{};
 	unsigned long long m_socket{};

@@ -60,12 +60,13 @@ void Client::InternalRun(float ticks)
     const float tickTimeMs{ 1000 / ticks };
     std::cout << "Running at " << ticks << "ticks per second\n";
     auto end = std::chrono::high_resolution_clock::now();
-    while (true)
+    bool connected{true};
+    while (connected)
     {
         const auto currentTime = std::chrono::high_resolution_clock::now();
         end = currentTime;
 
-        HandleReceive();
+        connected = HandleReceive();
 
         const auto sleepTimeMs = tickTimeMs - std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - currentTime).count();
         std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(sleepTimeMs)));
@@ -92,7 +93,7 @@ void Client::Bind(int packetId, void(* func)(Packet&))
     m_bindings.emplace(key);
 }
 
-void Client::HandleReceive()
+bool Client::HandleReceive()
 {
     // Receive a response from the server
     std::array<char, 256> buffer{};
@@ -102,14 +103,14 @@ void Client::HandleReceive()
         std::cerr << "Error receiving response: " << WSAGetLastError() << std::endl;
         closesocket(m_socket);
         WSACleanup();
-        return;
+        return false;
     }
     if (bytesReceived == 0)
     {
         std::cerr << "No data received closing socket..." << std::endl;
         closesocket(m_socket);
         WSACleanup();
-        return;
+        return false;
     }
 
     //Create packet core
@@ -129,4 +130,5 @@ void Client::HandleReceive()
             break;
         }
     }
+    return true;
 }
