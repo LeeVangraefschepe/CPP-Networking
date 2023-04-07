@@ -74,14 +74,16 @@ void Server::Run(float ticks)
     m_serverThread.detach();
 }
 
-void Server::SendPacket(Packet& packet, int id)
+bool Server::SendPacket(Packet& packet, int id)
 {
     if (send(m_clients[id], packet.Data(), packet.Length(), 0) == SOCKET_ERROR)
     {
         std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
         closesocket(m_clients[id]);
         WSACleanup();
+        return false;
     }
+    return true;
 }
 
 void Server::SendPacketAll(Packet& packet)
