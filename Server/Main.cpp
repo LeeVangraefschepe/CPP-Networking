@@ -2,7 +2,7 @@
 #include <iostream>
 #include "Server.h"
 
-void Test(Packet& packet)
+void Test(Packet& packet, int)
 {
     //Read data from packet
     float health = packet.Read<float>();
@@ -20,5 +20,14 @@ int main()
     Server server{12345};
     server.Bind(500, Test);
     server.Run(20.f);
+
+    Packet packet{ 777 };
+
+    while (true)
+    {
+        server.SendPacketAll(packet);
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
+
     return 0;
 }

@@ -5,7 +5,7 @@
 
 #include "Packet.h"
 
-class Client
+class Client final
 {
 public:
 	explicit Client(int port, const std::string& serverIp);

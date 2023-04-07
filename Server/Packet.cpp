@@ -1,12 +1,6 @@
 #include "pch.h"
 #include "Packet.h"
 
-#include <bitset>
-#include <iostream>
-#include <numeric>
-#include <string>
-#include <sstream>
-
 int Packet::ReadHeaderID()
 {
 	return Read<int>();

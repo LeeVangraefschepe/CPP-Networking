@@ -59,13 +59,51 @@ Server::Server(int port)
     std::cout << "Server is listening on port 12345..." << std::endl;
 }
 
+Server::~Server()
+{
+    for (const auto socket : m_clients)
+    {
+        closesocket(socket);
+    }
+    WSACleanup();
+}
+
 void Server::Run(float ticks)
+{
+    m_serverThread = std::thread{ [this, ticks]() { InternalRun(ticks); } };
+    m_serverThread.detach();
+}
+
+void Server::SendPacket(Packet& packet, int id)
+{
+    if (send(m_clients[id], packet.Data(), packet.Length(), 0) == SOCKET_ERROR)
+    {
+        std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
+        closesocket(m_clients[id]);
+        WSACleanup();
+    }
+}
+
+void Server::SendPacketAll(Packet& packet)
+{
+    for (auto it = m_clients.begin(); it != m_clients.end(); ++it)
+    {
+        if (send(*it, packet.Data(), packet.Length(), 0) == SOCKET_ERROR)
+        {
+            std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
+            closesocket(*it);
+            WSACleanup();
+        }
+    }
+}
+
+void Server::InternalRun(float ticks)
 {
     const float tickTimeMs{ 1000 / ticks };
     std::cout << "Running at " << ticks << "ticks per second\n";
     auto end = std::chrono::high_resolution_clock::now();
-	while (true)
-	{
+    while (true)
+    {
         const auto currentTime = std::chrono::high_resolution_clock::now();
         end = currentTime;
 
@@ -74,10 +112,10 @@ void Server::Run(float ticks)
 
         const auto sleepTimeMs = tickTimeMs - std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - currentTime).count();
         std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(sleepTimeMs)));
-	}
+    }
 }
 
-void Server::Bind(int packetId, void(*func)(Packet&))
+void Server::Bind(int packetId, void(*func)(Packet&, int))
 {
     if (m_bindings.contains(packetId))
     {
@@ -135,6 +173,7 @@ void Server::HandleIncomingConnection()
 
 void Server::HandleReceive()
 {
+    int clientId{};
     for (auto it = m_clients.begin(); it != m_clients.end(); ++it)
     {
         const SOCKET& clientSocket = *it;
@@ -167,15 +206,10 @@ void Server::HandleReceive()
         {
 	        if (packetId.first == header)
 	        {
-                packetId.second(packet);
-                break;;
+                packetId.second(packet, clientId);
+                break;
 	        }
         }
-
-        // Echo the data back to the client
-        if (send(clientSocket, buffer.data(), bytesReceived, 0) == SOCKET_ERROR)
-        {
-            std::cerr << "Error sending data: " << WSAGetLastError() << std::endl;
-        }
+        ++clientId;
     }
 }
