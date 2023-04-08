@@ -11,7 +11,7 @@ int main()
 {
     Packet packet{ 500 };
     packet.Write(420.69f);
-    packet.Write(69.420f);
+    packet.Write(true);
     packet.Write(42001);
 
     Client client{ 12345, "127.0.0.1" };

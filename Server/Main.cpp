@@ -5,14 +5,14 @@
 void Test(Packet& packet, int)
 {
     //Read data from packet
-    float health = packet.Read<float>();
-    float damage = packet.Read<float>();
-    int money = packet.Read<int>();
+    const auto health = packet.Read<float>();
+    const auto pvp = packet.Read<bool>();
+    const auto money = packet.Read<int>();
 
     //Print data from packet
     std::cout << "health: " << health << "\n";
-    std::cout << "damage: " << damage << "\n";
-    std::cout << "money: " <<  money << "\n";
+    std::cout << "damage: " << pvp << "\n";
+    std::cout << "money: " << money << "\n";
 }
 
 int main()
