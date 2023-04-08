@@ -10,6 +10,11 @@ public:
 	explicit Server(int port);
 	~Server();
 
+	Server(const Server&) = delete;
+	Server(Server&&) = delete;
+	Server& operator= (const Server&) = delete;
+	Server& operator= (const Server&&) = delete;
+
 	void Run(float tickSpeed);
 	bool SendPacket(Packet& packet, int id);
 	void SendPacketAll(Packet& packet);

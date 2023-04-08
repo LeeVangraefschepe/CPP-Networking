@@ -11,6 +11,11 @@ public:
 	explicit Client(int port, const std::string& serverIp);
 	~Client();
 
+	Client(const Client&) = delete;
+	Client(Client&&) = delete;
+	Client& operator= (const Client&) = delete;
+	Client& operator= (const Client&&) = delete;
+
 	void Run(float ticks);
 	bool SendPacket(Packet& packet);
 	void Bind(int packetId, void (*func)(Packet&));

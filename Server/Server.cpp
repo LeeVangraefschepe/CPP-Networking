@@ -56,7 +56,7 @@ Server::Server(int port)
         return;
     }
 
-    std::cout << "Server is listening on port 12345..." << std::endl;
+    std::cout << "Server is listening on port " << port << "..." << std::endl;
 }
 
 Server::~Server()
