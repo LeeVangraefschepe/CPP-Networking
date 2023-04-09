@@ -41,5 +41,8 @@
     <ClInclude Include="PacketReceiver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ServerEventReceiver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

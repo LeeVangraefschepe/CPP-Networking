@@ -1,11 +1,13 @@
 #include "pch.h"
 #include "Server.h"
 #include "PacketReceiver.h"
+#include "ServerEventReceiver.h"
 #include <array>
 #include <iostream>
 #include <thread>
 #include <winsock2.h>//For Windows socket programming
 #include <ws2tcpip.h>
+
 
 #pragma comment(lib, "ws2_32.lib")//Link with the Winsock library
 
@@ -82,7 +84,9 @@ bool Server::SendPacket(Packet& packet, int id)
 {
     if (send(m_clients[id], packet.Data(), packet.Length(), 0) == SOCKET_ERROR)
     {
+#ifdef _DEBUG
         std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
+#endif
         closesocket(m_clients[id]);
         WSACleanup();
         return false;
@@ -92,19 +96,14 @@ bool Server::SendPacket(Packet& packet, int id)
 
 void Server::SendPacketAll(Packet& packet)
 {
-    for (auto it = m_clients.begin(); it != m_clients.end(); ++it)
+    const int size = static_cast<int>(m_clients.size());
+    for (int i{}; i < size; ++i)
     {
-        SOCKET& clientSocket = *it;
-        if (clientSocket == 0)
+        if (m_clients[i] == 0)
         {
-	        continue;
+            continue;
         }
-        if (send(clientSocket, packet.Data(), packet.Length(), 0) == SOCKET_ERROR)
-        {
-            std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
-            closesocket(clientSocket);
-            WSACleanup();
-        }
+        SendPacket(packet, i);
     }
 }
 
@@ -126,9 +125,26 @@ void Server::InternalRun(float ticks)
     }
 }
 
+void Server::UnBind(ServerEventReceiver* receiver)
+{
+    for (auto it = m_receivers.begin(); it != m_receivers.end(); ++it)
+    {
+        if (*it == receiver)
+        {
+            m_receivers.erase(it);
+            return;
+        }
+    }
+}
+
 void Server::Bind(PacketReceiver* packetReceiver)
 {
-    m_receivers.push_back(packetReceiver);
+    m_packetReceiver = packetReceiver;
+}
+
+void Server::Bind(ServerEventReceiver* receiver)
+{
+    m_receivers.push_back(receiver);
 }
 
 void Server::HandleIncomingConnection()
@@ -182,8 +198,12 @@ void Server::HandleIncomingConnection()
 
     std::array<char, INET_ADDRSTRLEN> ipAddressBuffer{};
     inet_ntop(AF_INET, &clientAddress.sin_addr, ipAddressBuffer.data(), ipAddressBuffer.size());
+#ifdef _DEBUG
     std::cout << "Client connected from " << ipAddressBuffer.data() << "\n";
     std::cout << "Server clients " << GetConnectedAmount() << "/" << GetMaxClients() << "\n";
+#endif
+
+    Connect(clientId);
 }
 
 
@@ -203,14 +223,16 @@ void Server::HandleReceive()
         const int bytesReceived = recv(clientSocket, buffer.data(), static_cast<int>(buffer.size()), 0);
         if (bytesReceived == SOCKET_ERROR)
         {
+#ifdef _DEBUG
             std::cerr << "Error receiving data: " << WSAGetLastError() << std::endl;
+#endif
             closesocket(clientSocket);
-            clientSocket = 0;
+            Disconnect(clientId);
             return;
         }
         if (bytesReceived == 0)
         {
-            clientSocket = 0;
+            Disconnect(clientId);
             return;
         }
 
@@ -219,13 +241,13 @@ void Server::HandleReceive()
         Packet packet{ charBuffer };
 
         // Print the received data
+#ifdef _DEBUG
         std::cout << "Received " << bytesReceived << " bytes from client" << std::endl;
+#endif
 
         //WARNING PACKET CREATION WILL DELETE BUFFER
-        for (const auto& receiver : m_receivers)
-        {
-            receiver->OnReceive(clientId, packet);
-        }
+        m_packetReceiver->OnReceive(clientId, packet);
+
         ++clientId;
     }
 }
@@ -262,4 +284,21 @@ int Server::GetConnectedAmount() const
 int Server::GetMaxClients() const
 {
     return static_cast<int>(m_clients.size());
+}
+
+void Server::Connect(int id) const
+{
+    for (const auto& receiver : m_receivers)
+    {
+        receiver->OnConnect(id);
+    }
+}
+
+void Server::Disconnect(int id)
+{
+    m_clients[id] = 0;
+    for (const auto& receiver : m_receivers)
+    {
+        receiver->OnDisconnect(id);
+    }
 }

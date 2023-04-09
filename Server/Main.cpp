@@ -3,6 +3,7 @@
 
 #include "Server.h"
 #include "PacketReceiver.h"
+#include "ServerEventReceiver.h"
 
 class PacketHandler : public PacketReceiver
 {
@@ -25,6 +26,19 @@ public:
     }
 };
 
+class ServerHandler : public ServerEventReceiver
+{
+public:
+    void OnConnect(int clientId) const override
+    {
+        std::cout << "Client connected on id " << clientId << "\n";
+    }
+    void OnDisconnect(int clientId) const override
+    {
+        std::cout << "Client disconnected on id " << clientId << "\n";
+    }
+};
+
 int main()
 {
     Server server{ 12345,10 };
@@ -32,6 +46,9 @@ int main()
 
     PacketHandler packetHandler{};
     server.Bind(&packetHandler);
+
+    ServerHandler serverHandler{};
+    server.Bind(&serverHandler);
 
     Packet packet{ 777 };
     while (true)

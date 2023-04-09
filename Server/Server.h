@@ -5,6 +5,7 @@
 #include "Packet.h"
 
 class PacketReceiver;
+class ServerEventReceiver;
 
 class Server final
 {
@@ -21,6 +22,11 @@ public:
 	bool SendPacket(Packet& packet, int id);
 	void SendPacketAll(Packet& packet);
 	void Bind(PacketReceiver* packetReceiver);
+	void Bind(ServerEventReceiver* receiver);
+	void UnBind(ServerEventReceiver* receiver);
+
+	int GetConnectedAmount() const;
+	int GetMaxClients() const;
 
 private:
 	void InternalRun(float ticks);
@@ -29,11 +35,13 @@ private:
 	void HandleReceive();
 
 	bool FindAvailableSlot(int& id) const;
-	int GetConnectedAmount() const;
-	int GetMaxClients() const;
+
+	void Connect(int id) const;
+	void Disconnect(int id);
 
 	std::thread m_serverThread{};
 	unsigned long long m_socket;
 	std::vector<unsigned long long> m_clients{};
-	std::vector<PacketReceiver*> m_receivers;
+	PacketReceiver* m_packetReceiver;
+	std::vector<ServerEventReceiver*> m_receivers;
 };
