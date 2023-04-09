@@ -4,6 +4,8 @@
 #include <vector>
 #include "Packet.h"
 
+class PacketReceiver;
+
 class Server final
 {
 public:
@@ -18,7 +20,7 @@ public:
 	void Run(float tickSpeed);
 	bool SendPacket(Packet& packet, int id);
 	void SendPacketAll(Packet& packet);
-	void Bind(int packetId, void (*func)(Packet&, int));
+	void Bind(PacketReceiver* packetReceiver);
 
 private:
 	void InternalRun(float ticks);
@@ -33,5 +35,5 @@ private:
 	std::thread m_serverThread{};
 	unsigned long long m_socket;
 	std::vector<unsigned long long> m_clients{};
-	std::map<int, void(*)(Packet&, int)> m_bindings{};
+	std::vector<PacketReceiver*> m_receivers;
 };

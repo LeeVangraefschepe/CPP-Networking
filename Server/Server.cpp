@@ -1,10 +1,12 @@
 #include "pch.h"
 #include "Server.h"
+#include "PacketReceiver.h"
 #include <array>
 #include <iostream>
 #include <thread>
 #include <winsock2.h>//For Windows socket programming
 #include <ws2tcpip.h>
+
 #pragma comment(lib, "ws2_32.lib")//Link with the Winsock library
 
 Server::Server(int port, int maxClients)
@@ -124,14 +126,9 @@ void Server::InternalRun(float ticks)
     }
 }
 
-void Server::Bind(int packetId, void(*func)(Packet&, int))
+void Server::Bind(PacketReceiver* packetReceiver)
 {
-    if (m_bindings.contains(packetId))
-    {
-        std::cerr << "WARNING: Binding already exists and has been overwritten (" << packetId << ")\n";
-    }
-    std::pair key{ packetId, func };
-    m_bindings.emplace(key);
+    m_receivers.push_back(packetReceiver);
 }
 
 void Server::HandleIncomingConnection()
@@ -220,19 +217,14 @@ void Server::HandleReceive()
         //Create packet core
         std::vector<char> charBuffer{ std::begin(buffer), std::end(buffer) };
         Packet packet{ charBuffer };
-        const int header = packet.ReadHeaderID();
 
         // Print the received data
-        std::cout << "Received " << bytesReceived << " bytes from client with id: " << header << std::endl;
+        std::cout << "Received " << bytesReceived << " bytes from client" << std::endl;
 
         //WARNING PACKET CREATION WILL DELETE BUFFER
-        for (const auto& packetId : m_bindings)
+        for (const auto& receiver : m_receivers)
         {
-	        if (packetId.first == header)
-	        {
-                packetId.second(packet, clientId);
-                break;
-	        }
+            receiver->OnReceive(clientId, packet);
         }
         ++clientId;
     }

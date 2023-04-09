@@ -1,33 +1,42 @@
 #include "pch.h"
 #include <iostream>
+
 #include "Server.h"
+#include "PacketReceiver.h"
 
-void Test(Packet& packet, int)
+class PacketHandler : public PacketReceiver
 {
-    //Read data from packet
-    const auto health = packet.Read<float>();
-    const auto pvp = packet.Read<bool>();
-    const auto money = packet.Read<int>();
+public:
+    void OnReceive(int clientId, Packet& packet) const override
+    {
+        const int id = packet.ReadHeaderID();
+        if (id == 500)
+        {
+            //Read data from packet
+            const auto health = packet.Read<float>();
+            const auto pvp = packet.Read<bool>();
+            const auto money = packet.Read<int>();
 
-    //Print data from packet
-    std::cout << "health: " << health << "\n";
-    std::cout << "damage: " << pvp << "\n";
-    std::cout << "money: " << money << "\n";
-}
+            //Print data from packet
+            std::cout << "health: " << health << "\n";
+            std::cout << "damage: " << pvp << "\n";
+            std::cout << "money: " << money << "\n";
+        }
+    }
+};
 
 int main()
 {
-    Server server{12345,10};
-    server.Bind(500, Test);
+    Server server{ 12345,10 };
     server.Run(20.f);
 
-    Packet packet{ 777 };
+    PacketHandler packetHandler{};
+    server.Bind(&packetHandler);
 
+    Packet packet{ 777 };
     while (true)
     {
         server.SendPacketAll(packet);
         std::this_thread::sleep_for(std::chrono::seconds(5));
     }
-
-    return 0;
 }
