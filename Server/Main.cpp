@@ -17,7 +17,7 @@ void Test(Packet& packet, int)
 
 int main()
 {
-    Server server{12345};
+    Server server{12345,10};
     server.Bind(500, Test);
     server.Run(20.f);
 

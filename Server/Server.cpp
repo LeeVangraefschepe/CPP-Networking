@@ -7,7 +7,7 @@
 #include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32.lib")//Link with the Winsock library
 
-Server::Server(int port)
+Server::Server(int port, int maxClients)
 {
     //Initialize Winsock
     WSADATA wsaData;
@@ -56,6 +56,8 @@ Server::Server(int port)
         return;
     }
 
+    m_clients.resize(maxClients);
+
     std::cout << "Server is listening on port " << port << "..." << std::endl;
 }
 
@@ -90,10 +92,15 @@ void Server::SendPacketAll(Packet& packet)
 {
     for (auto it = m_clients.begin(); it != m_clients.end(); ++it)
     {
-        if (send(*it, packet.Data(), packet.Length(), 0) == SOCKET_ERROR)
+        SOCKET& clientSocket = *it;
+        if (clientSocket == 0)
+        {
+	        continue;
+        }
+        if (send(clientSocket, packet.Data(), packet.Length(), 0) == SOCKET_ERROR)
         {
             std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
-            closesocket(*it);
+            closesocket(clientSocket);
             WSACleanup();
         }
     }
@@ -165,11 +172,21 @@ void Server::HandleIncomingConnection()
         WSACleanup();
         return;
     }
-    m_clients.push_back(clientSocket);
+
+    int clientId{};
+    if (FindAvailableSlot(clientId))
+    {
+        std::cerr << "Client tried to connect but server is full" << std::endl;
+        closesocket(clientSocket);
+        return;
+    }
+
+    m_clients[clientId] = clientSocket;
 
     std::array<char, INET_ADDRSTRLEN> ipAddressBuffer{};
     inet_ntop(AF_INET, &clientAddress.sin_addr, ipAddressBuffer.data(), ipAddressBuffer.size());
-    std::cout << "Client connected from " << ipAddressBuffer.data() << std::endl;
+    std::cout << "Client connected from " << ipAddressBuffer.data() << "\n";
+    std::cout << "Server clients " << GetConnectedAmount() << "/" << GetMaxClients() << "\n";
 }
 
 
@@ -178,7 +195,12 @@ void Server::HandleReceive()
     int clientId{};
     for (auto it = m_clients.begin(); it != m_clients.end(); ++it)
     {
-        const SOCKET& clientSocket = *it;
+        SOCKET& clientSocket = *it;
+        if (clientSocket == 0)
+        {
+            continue;
+        }
+
         // Receive data from the client
         std::array<char,256> buffer{};
         const int bytesReceived = recv(clientSocket, buffer.data(), static_cast<int>(buffer.size()), 0);
@@ -186,12 +208,12 @@ void Server::HandleReceive()
         {
             std::cerr << "Error receiving data: " << WSAGetLastError() << std::endl;
             closesocket(clientSocket);
-            m_clients.erase(it);
+            clientSocket = 0;
             return;
         }
         if (bytesReceived == 0)
         {
-            m_clients.erase(it);
+            clientSocket = 0;
             return;
         }
 
@@ -214,4 +236,38 @@ void Server::HandleReceive()
         }
         ++clientId;
     }
+}
+bool Server::FindAvailableSlot(int& id) const
+{
+    const int size = static_cast<int>(m_clients.size());
+    for (int i{}; i < size; ++i)
+    {
+        const auto& clientSocket = m_clients[i];
+        if (clientSocket == 0)
+        {
+            id = i;
+            return false;
+        }
+    }
+    return true;
+}
+
+int Server::GetConnectedAmount() const
+{
+    const int size = static_cast<int>(m_clients.size());
+    int amount{};
+    for (int i{}; i < size; ++i)
+    {
+        const auto& clientSocket = m_clients[i];
+        if (clientSocket != 0)
+        {
+            ++amount;
+        }
+    }
+    return amount;
+}
+
+int Server::GetMaxClients() const
+{
+    return static_cast<int>(m_clients.size());
 }

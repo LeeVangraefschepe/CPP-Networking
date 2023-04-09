@@ -7,7 +7,7 @@
 class Server final
 {
 public:
-	explicit Server(int port);
+	explicit Server(int port, int maxClients);
 	~Server();
 
 	Server(const Server&) = delete;
@@ -25,6 +25,10 @@ private:
 
 	void HandleIncomingConnection();
 	void HandleReceive();
+
+	bool FindAvailableSlot(int& id) const;
+	int GetConnectedAmount() const;
+	int GetMaxClients() const;
 
 	std::thread m_serverThread{};
 	unsigned long long m_socket;
