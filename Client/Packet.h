@@ -34,7 +34,8 @@ public:
 
         return value;
 	}
-
+    void ReadString(std::string& string);
+	
 	
 
 	template <typename T>
@@ -48,6 +49,7 @@ public:
             m_data.push_back(byte);
         }
     }
+    void WriteString(const std::string& string);
 
 private:
 	std::vector<char> m_data{};
