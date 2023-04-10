@@ -1,4 +1,21 @@
 #include "pch.h"
+
+//Force color codes to work
+#include <Windows.h>
+void enableColors()
+{
+    DWORD consoleMode;
+    const HANDLE outputHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (GetConsoleMode(outputHandle, &consoleMode))
+    {
+        SetConsoleMode(outputHandle, consoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+    }
+}
+#define GREEN   "\033[32m" 
+#define YELLOW  "\033[33m"
+#define MAGENTA "\033[35m"
+#define RESET   "\033[0m"
+
 #include <iostream>
 #include <Client.h>
 #include <PacketReceiver.h>
@@ -13,12 +30,12 @@ public:
         {
             std::string message{};
             packet.ReadString(message);
-            std::cout << message << "\n";
+            std::cout << GREEN << message << "\n" << RESET;
         }
         else if (id == 1)
         {
 	        const int amountOnline = packet.Read<int>();
-            std::cout << "There are " << amountOnline - 1 << " people also chatting in this room!\n";
+            std::cout << MAGENTA << "There are " << amountOnline - 1 << " people also chatting in this room!\n" << RESET;
         }
         //std::cout << "Server sent me a package with id " << id << "\n";
     }
@@ -26,23 +43,26 @@ public:
 
 int main()
 {
+    enableColors();
     std::string line;
 
-    std::cout << "Fill in the server ip:\n";
+    std::cout << YELLOW << "Fill in the server ip:\n" << RESET;
     std::getline(std::cin, line);
 
-    Client client{ 12345, line };
+    Client client{ 1800, line };
     client.Run(20.f);
 
     PacketHandler packetHandler{};
     client.Bind(&packetHandler);
 
-    std::cout << "Fill in your username:\n";
+    std::cout << YELLOW << "Fill in your username:\n" << RESET;
     std::getline(std::cin, line);
 
     Packet userData{ 0 };
     userData.WriteString(line);
     client.SendPacket(userData);
+
+    std::cout << "\x1B[2J\x1B[H"; //Clear console
 
     while (client.IsConnected())
     {
