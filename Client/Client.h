@@ -5,6 +5,8 @@
 
 #include "Packet.h"
 
+class PacketReceiver;
+
 class Client final
 {
 public:
@@ -18,7 +20,7 @@ public:
 
 	void Run(float ticks);
 	bool SendPacket(Packet& packet);
-	void Bind(int packetId, void (*func)(Packet&));
+	void Bind(PacketReceiver* packetReceiver);
 
 private:
 	void InternalRun(float ticks);
@@ -26,5 +28,5 @@ private:
 
 	std::thread m_clientThread{};
 	unsigned long long m_socket{};
-	std::map<int, void(*)(Packet&)> m_bindings{};
+	PacketReceiver* m_packetReceiver;
 };

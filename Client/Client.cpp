@@ -6,6 +6,8 @@
 #include <iostream>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+
+#include "PacketReceiver.h"
 #pragma comment(lib, "ws2_32.lib")
 
 Client::Client(int port, const std::string& serverIp)
@@ -85,14 +87,9 @@ bool Client::SendPacket(Packet& packet)
     return true;
 }
 
-void Client::Bind(int packetId, void(* func)(Packet&))
+void Client::Bind(PacketReceiver* packetReceiver)
 {
-    if (m_bindings.contains(packetId))
-    {
-        std::cerr << "WARNING: Binding already exists and has been overwritten (" << packetId << ")\n";
-    }
-    std::pair key{ packetId, func };
-    m_bindings.emplace(key);
+    m_packetReceiver = packetReceiver;
 }
 
 bool Client::HandleReceive()
@@ -124,13 +121,7 @@ bool Client::HandleReceive()
     std::cout << "Received " << bytesReceived << " bytes from client with id: " << header << std::endl;
 
     //WARNING PACKET CREATION WILL DELETE BUFFER
-    for (const auto& packetId : m_bindings)
-    {
-        if (packetId.first == header)
-        {
-            packetId.second(packet);
-            break;
-        }
-    }
+    m_packetReceiver->OnReceive(packet);
+
     return true;
 }

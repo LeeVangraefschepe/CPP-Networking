@@ -150,6 +150,7 @@
   <ItemGroup>
     <ClInclude Include="Client.h" />
     <ClInclude Include="Packet.h" />
+    <ClInclude Include="PacketReceiver.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,11 +1,17 @@
 #include "pch.h"
 #include <iostream>
 #include "Client.h"
+#include "PacketReceiver.h"
 
-void Test(Packet&)
+class PacketHandler : public PacketReceiver
 {
-    std::cout << "Server sent me something\n";
-}
+public:
+    void OnReceive(Packet& packet) const override
+    {
+        const int id = packet.ReadHeaderID();
+        std::cout << "Server sent me a package with id " << id << "\n";
+    }
+};
 
 int main()
 {
@@ -16,13 +22,13 @@ int main()
 
     Client client{ 12345, "127.0.0.1" };
     client.Run(20.f);
-    client.Bind(777, Test);
+
+    PacketHandler packetHandler{};
+    client.Bind(&packetHandler);
 
     while (true)
     {
         client.SendPacket(packet);
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-
-    return 0;
 }
