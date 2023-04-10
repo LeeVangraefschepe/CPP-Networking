@@ -26,7 +26,7 @@ int main()
     PacketHandler packetHandler{};
     client.Bind(&packetHandler);
 
-    while (true)
+    while (client.IsConnected())
     {
         client.SendPacket(packet);
         std::this_thread::sleep_for(std::chrono::seconds(1));

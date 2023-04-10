@@ -19,6 +19,7 @@ public:
 	Client& operator= (const Client&&) = delete;
 
 	void Run(float ticks);
+	bool IsConnected();
 	bool SendPacket(Packet& packet);
 	void Bind(PacketReceiver* packetReceiver);
 
@@ -27,6 +28,7 @@ private:
 	bool HandleReceive();
 
 	std::thread m_clientThread{};
+	bool m_connected{false};
 	unsigned long long m_socket{};
 	PacketReceiver* m_packetReceiver;
 };

@@ -54,9 +54,16 @@ Client::~Client()
 
 void Client::Run(float ticks)
 {
+    m_connected = true;
     m_clientThread = std::thread { [this, ticks]() { InternalRun(ticks); } };
     m_clientThread.detach();
 }
+
+bool Client::IsConnected()
+{
+    return m_connected;
+}
+
 void Client::InternalRun(float ticks)
 {
     const float tickTimeMs{ 1000 / ticks };
@@ -79,9 +86,12 @@ bool Client::SendPacket(Packet& packet)
 {
     if (send(m_socket, packet.Data(), packet.Length(), 0) == SOCKET_ERROR)
     {
+#ifdef _DEBUG
         std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
+#endif
         closesocket(m_socket);
         WSACleanup();
+        m_connected = false;
         return false;
     }
     return true;
@@ -99,16 +109,22 @@ bool Client::HandleReceive()
     const int bytesReceived = recv(m_socket, buffer.data(), static_cast<int>(buffer.size()), 0);
     if (bytesReceived == SOCKET_ERROR)
     {
+#ifdef _DEBUG
         std::cerr << "Error receiving response: " << WSAGetLastError() << std::endl;
+#endif
         closesocket(m_socket);
         WSACleanup();
+        m_connected = false;
         return false;
     }
     if (bytesReceived == 0)
     {
+#ifdef _DEBUG
         std::cerr << "No data received closing socket..." << std::endl;
+#endif
         closesocket(m_socket);
         WSACleanup();
+        m_connected = false;
         return false;
     }
 
