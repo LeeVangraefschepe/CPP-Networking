@@ -89,9 +89,23 @@ bool Server::SendPacket(Packet& packet, int id)
 #endif
         closesocket(m_clients[id]);
         WSACleanup();
+        Disconnect(id);
         return false;
     }
     return true;
+}
+
+void Server::SendPacketAllExceptOne(Packet& packet, int id)
+{
+    const int size = static_cast<int>(m_clients.size());
+    for (int i{}; i < size; ++i)
+    {
+        if (m_clients[i] == 0 || i == id)
+        {
+            continue;
+        }
+        SendPacket(packet, i);
+    }
 }
 
 void Server::SendPacketAll(Packet& packet)
@@ -215,14 +229,25 @@ void Server::HandleReceive()
         SOCKET& clientSocket = *it;
         if (clientSocket == 0)
         {
+            ++clientId;
             continue;
         }
+
+        // Set socket to non-blocking mode
+        u_long mode = 1; // 1 for non-blocking mode, 0 for blocking mode
+        ioctlsocket(clientSocket, FIONBIO, &mode);
 
         // Receive data from the client
         std::array<char,256> buffer{};
         const int bytesReceived = recv(clientSocket, buffer.data(), static_cast<int>(buffer.size()), 0);
+
         if (bytesReceived == SOCKET_ERROR)
         {
+            if (WSAGetLastError() == WSAEWOULDBLOCK)
+            {
+                ++clientId;
+                continue;
+            }
 #ifdef _DEBUG
             std::cerr << "Error receiving data: " << WSAGetLastError() << std::endl;
 #endif
@@ -239,11 +264,6 @@ void Server::HandleReceive()
         //Create packet core
         std::vector<char> charBuffer{ std::begin(buffer), std::end(buffer) };
         Packet packet{ charBuffer };
-
-        // Print the received data
-#ifdef _DEBUG
-        std::cout << "Received " << bytesReceived << " bytes from client" << std::endl;
-#endif
 
         //WARNING PACKET CREATION WILL DELETE BUFFER
         m_packetReceiver->OnReceive(clientId, packet);

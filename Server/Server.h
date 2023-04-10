@@ -20,6 +20,7 @@ public:
 
 	void Run(float tickSpeed);
 	bool SendPacket(Packet& packet, int id);
+	void SendPacketAllExceptOne(Packet& packet, int id);
 	void SendPacketAll(Packet& packet);
 	void Bind(PacketReceiver* packetReceiver);
 	void Bind(ServerEventReceiver* receiver);

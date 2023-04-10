@@ -67,7 +67,6 @@ bool Client::IsConnected()
 void Client::InternalRun(float ticks)
 {
     const float tickTimeMs{ 1000 / ticks };
-    std::cout << "Running at " << ticks << "ticks per second\n";
     auto end = std::chrono::high_resolution_clock::now();
     bool connected{true};
     while (connected)
@@ -131,10 +130,6 @@ bool Client::HandleReceive()
     //Create packet core
     std::vector<char> charBuffer{ std::begin(buffer), std::end(buffer) };
     Packet packet{ charBuffer };
-    const int header = packet.ReadHeaderID();
-
-    //Print the response from the server
-    std::cout << "Received " << bytesReceived << " bytes from client with id: " << header << std::endl;
 
     //WARNING PACKET CREATION WILL DELETE BUFFER
     m_packetReceiver->OnReceive(packet);
