@@ -9,26 +9,50 @@ public:
     void OnReceive(Packet& packet) const override
     {
         const int id = packet.ReadHeaderID();
-        std::cout << "Server sent me a package with id " << id << "\n";
+        if (id == 0)
+        {
+            std::string message{};
+            packet.ReadString(message);
+            std::cout << message << "\n";
+        }
+        else if (id == 1)
+        {
+	        const int amountOnline = packet.Read<int>();
+            std::cout << "There are " << amountOnline - 1 << " people also chatting in this room!\n";
+        }
+        //std::cout << "Server sent me a package with id " << id << "\n";
     }
 };
 
 int main()
 {
-    Packet packet{ 500 };
-    packet.Write(420.69f);
-    packet.Write(true);
-    packet.Write(42001);
+    std::string line;
 
-    Client client{ 12345, "127.0.0.1" };
+    std::cout << "Fill in the server ip:\n";
+    std::getline(std::cin, line);
+
+    Client client{ 12345, line };
     client.Run(20.f);
 
     PacketHandler packetHandler{};
     client.Bind(&packetHandler);
 
+    std::cout << "Fill in your username:\n";
+    std::getline(std::cin, line);
+
+    Packet userData{ 0 };
+    userData.WriteString(line);
+    client.SendPacket(userData);
+
     while (client.IsConnected())
     {
-        client.SendPacket(packet);
+        Packet message{ 1 };
+        
+        std::getline(std::cin, line);
+
+        message.WriteString(line);
+
+        client.SendPacket(message);
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }

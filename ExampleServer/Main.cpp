@@ -4,23 +4,50 @@
 #include <PacketReceiver.h>
 #include <ServerEventReceiver.h>
 
+#include "UserManager.h"
+
+UserManager gUserManager{};
+Server gServer{ 12345,10 };
+
 class PacketHandler : public PacketReceiver
 {
 public:
     void OnReceive(int clientId, Packet& packet) const override
     {
         const int id = packet.ReadHeaderID();
-        if (id == 500)
+        const auto user = gUserManager.GetUser(clientId);
+        if (!user) {return;}
+        switch (id)
         {
-            //Read data from packet
-            const auto health = packet.Read<float>();
-            const auto pvp = packet.Read<bool>();
-            const auto money = packet.Read<int>();
+        case 0:
+	        {
+                std::string username{};
+                packet.ReadString(username);
+                user->username = username;
 
-            //Print data from packet
-            std::cout << "health: " << health << "\n";
-            std::cout << "damage: " << pvp << "\n";
-            std::cout << "money: " << money << "\n";
+                Packet confirm{1};
+                confirm.Write<int>(gUserManager.GetUserAmount());
+                gServer.SendPacket(confirm, clientId);
+	        }
+            break;
+        case 1:
+	        {
+				Packet message{ 0 };
+                std::string text{};
+                packet.ReadString(text);
+
+                std::stringstream ss{};
+                ss << user->username << ": " << text;
+
+                const std::string serverResult = ss.str();
+
+                message.WriteString(serverResult);
+
+				gServer.SendPacketAllExceptOne(message, clientId);
+	        }
+            break;
+        default:
+            break;
         }
     }
 };
@@ -30,29 +57,26 @@ class ServerHandler : public ServerEventReceiver
 public:
     void OnConnect(int clientId) const override
     {
-        std::cout << "Client connected on id " << clientId << "\n";
+        gUserManager.AddUser(clientId, User{});
     }
     void OnDisconnect(int clientId) const override
     {
-        std::cout << "Client disconnected on id " << clientId << "\n";
+        gUserManager.RemoveUser(clientId);
     }
 };
 
 int main()
 {
-    Server server{ 12345,10 };
-    server.Run(20.f);
+    gServer.Run(20.f);
 
     PacketHandler packetHandler{};
-    server.Bind(&packetHandler);
+    gServer.Bind(&packetHandler);
 
     ServerHandler serverHandler{};
-    server.Bind(&serverHandler);
+    gServer.Bind(&serverHandler);
 
-    Packet packet{ 777 };
     while (true)
     {
-        server.SendPacketAll(packet);
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+
     }
 }
