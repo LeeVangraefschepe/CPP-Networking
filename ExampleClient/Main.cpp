@@ -73,6 +73,5 @@ int main()
         message.WriteString(line);
 
         client.SendPacket(message);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 }
