@@ -4,5 +4,5 @@ class PacketReceiver
 {
 public:
 	virtual ~PacketReceiver() = default;
-	virtual void OnReceive(int clientId, Packet& packet) const = 0;
+	virtual void OnReceive(int clientId, Packet& packet) = 0;
 };

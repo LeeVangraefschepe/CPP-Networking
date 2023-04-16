@@ -12,7 +12,7 @@ Server gServer{ 1800,10 };
 class PacketHandler : public PacketReceiver
 {
 public:
-    void OnReceive(int clientId, Packet& packet) const override
+    void OnReceive(int clientId, Packet& packet) override
     {
         const int id = packet.ReadHeaderID();
         const auto user = gUserManager.GetUser(clientId);
@@ -55,11 +55,11 @@ public:
 class ServerHandler : public ServerEventReceiver
 {
 public:
-    void OnConnect(int clientId) const override
+    void OnConnect(int clientId) override
     {
         gUserManager.AddUser(clientId, User{});
     }
-    void OnDisconnect(int clientId) const override
+    void OnDisconnect(int clientId) override
     {
         gUserManager.RemoveUser(clientId);
     }

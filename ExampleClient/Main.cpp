@@ -23,7 +23,7 @@ void enableColors()
 class PacketHandler : public PacketReceiver
 {
 public:
-    void OnReceive(Packet& packet) const override
+    void OnReceive(Packet& packet) override
     {
         const int id = packet.ReadHeaderID();
         if (id == 0)
