@@ -61,11 +61,11 @@ The `bind` function can be used to link a specific class that derives from eithe
 class ServerHandler : public ServerEventReceiver
 {
 public:
-    void OnConnect(int clientId) const override
+    void OnConnect(int clientId) override
     {
         std::cout << "New client connected with id:" << clientId << "\n";
     }
-    void OnDisconnect(int clientId) const override
+    void OnDisconnect(int clientId) override
     {
         std::cout << "Client disconnected with id:" << clientId << "\n";
     }
@@ -86,7 +86,7 @@ int main()
 class PacketHandler : public PacketReceiver
 {
 public:
-    void OnReceive(Packet& packet) const override
+    void OnReceive(Packet& packet) override
     {
         const int id = packet.ReadHeaderID();
         if (id == 0)
