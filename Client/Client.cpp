@@ -47,7 +47,6 @@ Client::Client(int port, const std::string& serverIp)
 
 Client::~Client()
 {
-    m_clientThread.join();
     closesocket(m_socket);
     WSACleanup();
 }
