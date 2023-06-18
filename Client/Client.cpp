@@ -7,7 +7,6 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-#include "PacketReceiver.h"
 #include "PacketManager.h"
 #pragma comment(lib, "ws2_32.lib")
 
@@ -98,11 +97,6 @@ bool Client::SendPacket(Packet& packet)
     return true;
 }
 
-void Client::Bind(PacketReceiver* packetReceiver)
-{
-    m_packetReceiver = packetReceiver;
-}
-
 bool Client::HandleReceive()
 {
     // Receive a response from the server
@@ -131,12 +125,9 @@ bool Client::HandleReceive()
 
     //Create packet core
     std::vector<char> charBuffer{ std::begin(buffer), std::end(buffer) };
-    Packet packet{ charBuffer };
 
-    m_packetManager->AddPacket(packet);
-
-    //WARNING PACKET CREATION WILL DELETE BUFFER
-    m_packetReceiver->OnReceive(packet);
+    //WARNING PACKET CREATION WILL DELETE CHAR BUFFER
+    m_packetManager->AddPacket(Packet{charBuffer});
 
     return true;
 }

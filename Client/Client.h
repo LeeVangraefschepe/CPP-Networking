@@ -6,8 +6,6 @@
 #include "Packet.h"
 #include "PacketManager.h"
 
-class PacketReceiver;
-
 class Client final
 {
 public:
@@ -23,7 +21,6 @@ public:
 	void Run(float ticks);
 	bool IsConnected();
 	bool SendPacket(Packet& packet);
-	void Bind(PacketReceiver* packetReceiver);
 
 private:
 	void InternalRun(float ticks);
@@ -32,6 +29,5 @@ private:
 	std::thread m_clientThread{};
 	bool m_connected{false};
 	unsigned long long m_socket{};
-	PacketReceiver* m_packetReceiver;
 	std::unique_ptr<PacketManager> m_packetManager;
 };

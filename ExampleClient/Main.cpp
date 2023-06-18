@@ -18,28 +18,6 @@ void enableColors()
 
 #include <iostream>
 #include <Client.h>
-#include <PacketReceiver.h>
-
-class PacketHandler : public PacketReceiver
-{
-public:
-    void OnReceive(Packet& packet) override
-    {
-        const int id = packet.ReadHeaderID();
-        if (id == 0)
-        {
-            std::string message{};
-            packet.ReadString(message);
-            std::cout << GREEN << message << "\n" << RESET;
-        }
-        else if (id == 1)
-        {
-	        const int amountOnline = packet.Read<int>();
-            std::cout << MAGENTA << "There are " << amountOnline - 1 << " people also chatting in this room!\n" << RESET;
-        }
-        //std::cout << "Server sent me a package with id " << id << "\n";
-    }
-};
 
 int main()
 {
@@ -51,9 +29,6 @@ int main()
 
     Client client{ 12345, line };
     client.Run(20.f);
-
-    PacketHandler packetHandler{};
-    client.Bind(&packetHandler);
 
     std::cout << YELLOW << "Fill in your username:\n" << RESET;
     std::getline(std::cin, line);
@@ -71,7 +46,17 @@ int main()
         {
             if (client.GetPacket(packet))
             {
-                std::cout << "Received packet with id: " << packet.ReadHeaderID() << "\n";
+	            if (const int id = packet.ReadHeaderID(); id == 0)
+                {
+                    std::string message{};
+                    packet.ReadString(message);
+                    std::cout << GREEN << message << "\n" << RESET;
+                }
+                else if (id == 1)
+                {
+                    const int amountOnline = packet.Read<int>();
+                    std::cout << MAGENTA << "There are " << amountOnline - 1 << " people also chatting in this room!\n" << RESET;
+                }
             }
 	    }
     };
