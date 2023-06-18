@@ -49,7 +49,7 @@ int main()
     std::cout << YELLOW << "Fill in the server ip:\n" << RESET;
     std::getline(std::cin, line);
 
-    Client client{ 1800, line };
+    Client client{ 12345, line };
     client.Run(20.f);
 
     PacketHandler packetHandler{};
@@ -63,6 +63,21 @@ int main()
     client.SendPacket(userData);
 
     std::cout << "\x1B[2J\x1B[H"; //Clear console
+
+    auto packetHandle = [&]()
+    {
+        Packet packet{ -1 };
+        while (true)
+        {
+            if (client.GetPacket(packet))
+            {
+                std::cout << "Received packet with id: " << packet.ReadHeaderID() << "\n";
+            }
+	    }
+    };
+
+    std::jthread thread{packetHandle};
+    thread.detach();
 
     while (client.IsConnected())
     {

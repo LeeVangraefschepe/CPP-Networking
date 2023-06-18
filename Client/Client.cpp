@@ -8,9 +8,10 @@
 #include <ws2tcpip.h>
 
 #include "PacketReceiver.h"
+#include "PacketManager.h"
 #pragma comment(lib, "ws2_32.lib")
 
-Client::Client(int port, const std::string& serverIp)
+Client::Client(int port, const std::string& serverIp, int packetBuffer)
 {
     //Initialize Winsock
     WSADATA wsData;
@@ -43,6 +44,8 @@ Client::Client(int port, const std::string& serverIp)
         WSACleanup();
         return;
     }
+
+    m_packetManager = std::make_unique<PacketManager>(packetBuffer);
 }
 
 Client::~Client()
@@ -129,6 +132,8 @@ bool Client::HandleReceive()
     //Create packet core
     std::vector<char> charBuffer{ std::begin(buffer), std::end(buffer) };
     Packet packet{ charBuffer };
+
+    m_packetManager->AddPacket(packet);
 
     //WARNING PACKET CREATION WILL DELETE BUFFER
     m_packetReceiver->OnReceive(packet);

@@ -7,7 +7,7 @@
 #include "UserManager.h"
 
 UserManager gUserManager{};
-Server gServer{ 1800,10 };
+Server gServer{ 12345,10 };
 
 class PacketHandler : public PacketReceiver
 {
