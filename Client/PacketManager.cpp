@@ -18,7 +18,7 @@ bool PacketManager::GetPacket(Packet& packet)
 {
 	std::unique_lock lock {m_lockPackets};
 	if (m_packetAmount < 1) {return false;}
-	packet = m_packets[m_packetAmount--];
+	packet = m_packets[--m_packetAmount];
 	return true;
 }
 
