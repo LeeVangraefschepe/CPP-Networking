@@ -26,12 +26,14 @@ int main()
 
     std::cout << YELLOW << "Fill in the server ip:\n" << RESET;
     std::getline(std::cin, line);
+    if (line.empty()) { line = "127.0.0.1"; }
 
     Client client{ 12345, line };
     client.Run(20.f);
 
     std::cout << YELLOW << "Fill in your username:\n" << RESET;
     std::getline(std::cin, line);
+    if (line.empty()) { line = "Anonymous"; }
 
     Packet userData{ 0 };
     userData.WriteString(line);
@@ -39,6 +41,7 @@ int main()
 
     std::cout << "\x1B[2J\x1B[H"; //Clear console
 
+    //Create lamda to handle incoming messages on other thread
     auto packetHandle = [&]()
     {
         Packet packet{ -1 };
@@ -61,9 +64,11 @@ int main()
 	    }
     };
 
+    //Detach other thread
     std::jthread thread{packetHandle};
     thread.detach();
 
+    //Start looping for input
     while (client.IsConnected())
     {
         Packet message{ 1 };
