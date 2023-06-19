@@ -24,7 +24,7 @@
     <ClCompile Include="Packet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Main.cpp">
+    <ClCompile Include="PacketManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,10 +38,10 @@
     <ClInclude Include="Packet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PacketReceiver.h">
+    <ClInclude Include="ServerEventReceiver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ServerEventReceiver.h">
+    <ClInclude Include="PacketManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

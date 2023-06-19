@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Server.h"
-#include "PacketReceiver.h"
 #include "ServerEventReceiver.h"
 #include <array>
 #include <iostream>
@@ -11,7 +10,7 @@
 
 #pragma comment(lib, "ws2_32.lib")//Link with the Winsock library
 
-Server::Server(int port, int maxClients)
+Server::Server(int port, int maxClients, int packetBuffer)
 {
     //Initialize Winsock
     WSADATA wsaData;
@@ -61,7 +60,7 @@ Server::Server(int port, int maxClients)
     }
 
     m_clients.resize(maxClients);
-
+    m_packetManager = std::make_unique<PacketManager>(packetBuffer);
     std::cout << "Server is listening on port " << port << "..." << std::endl;
 }
 
@@ -149,11 +148,6 @@ void Server::UnBind(ServerEventReceiver* receiver)
             return;
         }
     }
-}
-
-void Server::Bind(PacketReceiver* packetReceiver)
-{
-    m_packetReceiver = packetReceiver;
 }
 
 void Server::Bind(ServerEventReceiver* receiver)
@@ -263,10 +257,9 @@ void Server::HandleReceive()
 
         //Create packet core
         std::vector<char> charBuffer{ std::begin(buffer), std::end(buffer) };
-        Packet packet{ charBuffer };
 
         //WARNING PACKET CREATION WILL DELETE BUFFER
-        m_packetReceiver->OnReceive(clientId, packet);
+        m_packetManager->AddPacket(Packet{charBuffer}, clientId);
 
         ++clientId;
     }
