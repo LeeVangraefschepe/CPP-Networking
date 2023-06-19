@@ -1,38 +1,35 @@
 #include "pch.h"
-#include <iostream>
 #include <Server.h>
-#include <ServerEventReceiver.h>
-
 #include "UserManager.h"
 
 UserManager gUserManager{};
 Server gServer{ 12345,10 };
 
-class ServerHandler : public ServerEventReceiver
-{
-public:
-    void OnConnect(int clientId) override
-    {
-        gUserManager.AddUser(clientId, User{});
-    }
-    void OnDisconnect(int clientId) override
-    {
-        gUserManager.RemoveUser(clientId);
-    }
-};
-
 int main()
 {
     gServer.Run(20.f);
+    const auto eventHandler = gServer.GetEventManager();
 
-    ServerHandler serverHandler{};
-    gServer.Bind(&serverHandler);
-
-    Packet packet{-1};
+    //Alloc for future usage
     int clientId{-1};
+    Packet packet{-1};
+    ServerEventManager::Event event{};
 
     while (true)
     {
+        while (eventHandler->GetEvent(event, clientId))
+        {
+	        switch (event)
+	        {
+	        case ServerEventManager::Connect:
+                gUserManager.AddUser(clientId, User{});
+                break;
+	        case ServerEventManager::Disconnect:
+                gUserManager.RemoveUser(clientId);
+                break;
+	        }
+        }
+
 	    while (gServer.GetPacket(packet, clientId))
 	    {
             const int id = packet.ReadHeaderID();

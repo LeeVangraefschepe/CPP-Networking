@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Server.h"
-#include "ServerEventReceiver.h"
 #include <array>
 #include <iostream>
 #include <thread>
@@ -10,8 +9,13 @@
 
 #pragma comment(lib, "ws2_32.lib")//Link with the Winsock library
 
-Server::Server(int port, int maxClients, int packetBuffer)
+Server::Server(int port, int maxClients, int packetBuffer, int eventBuffer)
 {
+    //Create buffers
+    m_packetManager = std::make_unique<PacketManager>(packetBuffer);
+    m_eventManager = std::make_unique<ServerEventManager>(eventBuffer);
+
+
     //Initialize Winsock
     WSADATA wsaData;
     int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -60,7 +64,6 @@ Server::Server(int port, int maxClients, int packetBuffer)
     }
 
     m_clients.resize(maxClients);
-    m_packetManager = std::make_unique<PacketManager>(packetBuffer);
     std::cout << "Server is listening on port " << port << "..." << std::endl;
 }
 
@@ -138,23 +141,6 @@ void Server::InternalRun(float ticks)
     }
 }
 
-void Server::UnBind(ServerEventReceiver* receiver)
-{
-    for (auto it = m_receivers.begin(); it != m_receivers.end(); ++it)
-    {
-        if (*it == receiver)
-        {
-            m_receivers.erase(it);
-            return;
-        }
-    }
-}
-
-void Server::Bind(ServerEventReceiver* receiver)
-{
-    m_receivers.push_back(receiver);
-}
-
 void Server::HandleIncomingConnection()
 {
     // Set up a set of sockets to monitor for incoming connections
@@ -213,7 +199,6 @@ void Server::HandleIncomingConnection()
 
     Connect(clientId);
 }
-
 
 void Server::HandleReceive()
 {
@@ -301,17 +286,11 @@ int Server::GetMaxClients() const
 
 void Server::Connect(int id) const
 {
-    for (const auto& receiver : m_receivers)
-    {
-        receiver->OnConnect(id);
-    }
+    m_eventManager->AddEvent(ServerEventManager::Connect, id);
 }
 
 void Server::Disconnect(int id)
 {
     m_clients[id] = 0;
-    for (const auto& receiver : m_receivers)
-    {
-        receiver->OnDisconnect(id);
-    }
+    m_eventManager->AddEvent(ServerEventManager::Disconnect, id);
 }
