@@ -7,7 +7,7 @@
 class Packet
 {
 public:
-	Packet(int headerId) { Write(headerId); }
+	Packet(int headerId = -1) { Write(headerId); }
 	explicit Packet(std::vector<char>& data) : m_data(std::move(data)) {}
 
     char* Data();
