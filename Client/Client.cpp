@@ -6,8 +6,7 @@
 #include <iostream>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-
-#include "PacketManager.h"
+#include "EventPool.h"
 #pragma comment(lib, "ws2_32.lib")
 
 Client::Client(int port, const std::string& serverIp, int packetBuffer)
@@ -44,7 +43,7 @@ Client::Client(int port, const std::string& serverIp, int packetBuffer)
         return;
     }
 
-    m_packetManager = std::make_unique<PacketManager>(packetBuffer);
+    m_packetReceiver = std::make_unique<EventPool<Packet>>(packetBuffer);
 }
 
 Client::~Client()
@@ -127,7 +126,7 @@ bool Client::HandleReceive()
     std::vector<char> charBuffer{ std::begin(buffer), std::end(buffer) };
 
     //WARNING PACKET CREATION WILL DELETE CHAR BUFFER
-    m_packetManager->AddPacket(Packet{charBuffer});
+    m_packetReceiver->Add(Packet{charBuffer});
 
     return true;
 }

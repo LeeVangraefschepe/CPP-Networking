@@ -3,8 +3,9 @@
 #include <string>
 #include <thread>
 
+//Includes needed for unique pointer
 #include "Packet.h"
-#include "PacketManager.h"
+#include "EventPool.h"
 
 class Client final
 {
@@ -17,7 +18,7 @@ public:
 	Client& operator= (const Client&) = delete;
 	Client& operator= (const Client&&) = delete;
 
-	bool GetPacket(Packet& packet) const { return m_packetManager->GetPacket(packet); }
+	bool GetPacket(Packet& packet) const { return m_packetReceiver->Get(packet); }
 	void Run(float ticks);
 	bool IsConnected();
 	bool SendPacket(Packet& packet);
@@ -29,5 +30,6 @@ private:
 	std::thread m_clientThread{};
 	bool m_connected{false};
 	unsigned long long m_socket{};
-	std::unique_ptr<PacketManager> m_packetManager;
+	std::unique_ptr<EventPool<Packet>> m_packetReceiver;
+	std::unique_ptr<EventPool<Packet>> m_packetSender;
 };
