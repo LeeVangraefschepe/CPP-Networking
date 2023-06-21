@@ -19,17 +19,24 @@ public:
 	Client& operator= (const Client&&) = delete;
 
 	bool GetPacket(Packet& packet) const { return m_packetReceiver->Get(packet); }
+	void SendPacket(const Packet& packet);
 	void Run(float ticks);
+	void HandleSend();
 	bool IsConnected();
-	bool SendPacket(Packet& packet);
 
 private:
 	void InternalRun(float ticks);
 	bool HandleReceive();
 
-	std::thread m_clientThread{};
+	std::jthread m_clientThread{};
+
+	std::jthread m_sendThread;
+	std::condition_variable m_sendCondition{};
+
 	bool m_connected{false};
 	unsigned long long m_socket{};
 	std::unique_ptr<EventPool<Packet>> m_packetReceiver;
 	std::unique_ptr<EventPool<Packet>> m_packetSender;
+
+	std::mutex m_mutex{};
 };

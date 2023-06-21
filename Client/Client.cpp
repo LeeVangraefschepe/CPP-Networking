@@ -44,10 +44,15 @@ Client::Client(int port, const std::string& serverIp, int packetBuffer)
     }
 
     m_packetReceiver = std::make_unique<EventPool<Packet>>(packetBuffer);
+    m_packetSender = std::make_unique<EventPool<Packet>>(packetBuffer);
+
+    m_sendThread = std::jthread{ &Client::HandleSend, this };
 }
 
 Client::~Client()
 {
+    m_sendThread.request_stop();
+    m_sendCondition.notify_one();
     closesocket(m_socket);
     WSACleanup();
 }
@@ -55,8 +60,39 @@ Client::~Client()
 void Client::Run(float ticks)
 {
     m_connected = true;
-    m_clientThread = std::thread { [this, ticks]() { InternalRun(ticks); } };
+    m_clientThread = std::jthread { [this, ticks]() { InternalRun(ticks); } };
     m_clientThread.detach();
+}
+
+void Client::SendPacket(const Packet& packet)
+{
+    m_packetSender->Add(packet);
+    m_sendCondition.notify_one();
+}
+
+void Client::HandleSend()
+{
+    const std::stop_token& stopToken{ m_sendThread.get_stop_token() };
+    Packet data{};
+
+    while (!stopToken.stop_requested())
+    {
+        std::unique_lock lock {m_mutex};
+        m_sendCondition.wait(lock, [&]() { return m_packetSender->Get(data) || stopToken.stop_requested(); });
+        lock.unlock();
+
+        if (stopToken.stop_requested()) { break; }
+
+        if (send(m_socket, data.Data(), data.Length(), 0) == SOCKET_ERROR)
+        {
+#ifdef _DEBUG
+            std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
+#endif
+            closesocket(m_socket);
+            WSACleanup();
+            m_connected = false;
+        }
+    }
 }
 
 bool Client::IsConnected()
@@ -79,21 +115,6 @@ void Client::InternalRun(float ticks)
         const auto sleepTimeMs = tickTimeMs - std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - currentTime).count();
         std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(sleepTimeMs)));
     }
-}
-
-bool Client::SendPacket(Packet& packet)
-{
-    if (send(m_socket, packet.Data(), packet.Length(), 0) == SOCKET_ERROR)
-    {
-#ifdef _DEBUG
-        std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
-#endif
-        closesocket(m_socket);
-        WSACleanup();
-        m_connected = false;
-        return false;
-    }
-    return true;
 }
 
 bool Client::HandleReceive()
