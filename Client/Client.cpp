@@ -51,7 +51,7 @@ Client::Client(int port, const std::string& serverIp, int packetBuffer)
     }
 
     m_packetReceiver = std::make_unique<EventPool<Packet>>(packetBuffer);
-    m_packetSender = std::make_unique<EventPool<Packet>>(packetBuffer);
+    m_packetSender = std::make_unique<EventPool<InternalPacket>>(packetBuffer);
 
     m_sendThread = std::jthread{ &Client::HandleSend, this };
 }
@@ -73,22 +73,20 @@ void Client::Run(float ticks)
 
 void Client::SendPacket(const Packet& packet)
 {
-    m_packetSender->Add(packet);
+    m_packetSender->Add(InternalPacket{packet});
     m_sendCondition.notify_one();
 }
 
-void Client::SendUDPPacket(Packet& packet)
+void Client::SendUDPPacket(const Packet& packet)
 {
-    int bytesSentUDP = sendto(m_UDPsocket, packet.Data(), packet.Length(), 0, reinterpret_cast<struct sockaddr*>(m_pServerAdress.get()), sizeof(sockaddr_in));
-    if (bytesSentUDP == SOCKET_ERROR) {
-        perror("Error sending data to UDP server");
-    }
+    m_packetSender->Add(InternalPacket{ packet, true });
+    m_sendCondition.notify_one();
 }
 
 void Client::HandleSend()
 {
     const std::stop_token& stopToken{ m_sendThread.get_stop_token() };
-    Packet data{};
+    InternalPacket data{};
 
     while (!stopToken.stop_requested())
     {
@@ -98,19 +96,27 @@ void Client::HandleSend()
 
         if (stopToken.stop_requested()) { break; }
 
-        if (send(m_socket, data.Data(), data.Length(), 0) == SOCKET_ERROR)
+        if (data.IsUDP)
         {
+	        const int bytesSentUDP = sendto(m_UDPsocket, data.Packet.Data(), data.Packet.Length(), 0, reinterpret_cast<struct sockaddr*>(m_pServerAdress.get()), sizeof(sockaddr_in));
+            if (bytesSentUDP == SOCKET_ERROR) perror("Error sending data to UDP server");
+        }
+        else
+        {
+            if (send(m_socket, data.Packet.Data(), data.Packet.Length(), 0) == SOCKET_ERROR)
+            {
 #ifdef _DEBUG
-            std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
+                std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
 #endif
-            closesocket(m_socket);
-            WSACleanup();
-            m_connected = false;
+                closesocket(m_socket);
+                WSACleanup();
+                m_connected = false;
+            }
         }
     }
 }
 
-bool Client::IsConnected()
+bool Client::IsConnected() const
 {
     return m_connected;
 }

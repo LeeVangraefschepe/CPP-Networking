@@ -22,12 +22,18 @@ public:
 
 	bool GetPacket(Packet& packet) const { return m_packetReceiver->Get(packet); }
 	void SendPacket(const Packet& packet);
-	void SendUDPPacket(Packet& packet);
+	void SendUDPPacket(const Packet& packet);
 	void Run(float ticks);
 	void HandleSend();
-	bool IsConnected();
+	bool IsConnected() const;
 
 private:
+	struct InternalPacket final
+	{
+		Packet Packet{};
+		bool IsUDP{};
+	};
+
 	void InternalRun(float ticks);
 	bool HandleReceive();
 
@@ -42,7 +48,7 @@ private:
 	std::unique_ptr<sockaddr_in> m_pServerAdress;
 
 	std::unique_ptr<EventPool<Packet>> m_packetReceiver;
-	std::unique_ptr<EventPool<Packet>> m_packetSender;
+	std::unique_ptr<EventPool<InternalPacket>> m_packetSender;
 
 	std::mutex m_mutex{};
 };
