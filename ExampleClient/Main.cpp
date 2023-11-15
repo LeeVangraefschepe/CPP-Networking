@@ -37,7 +37,7 @@ int main()
 
     Packet userData{ 0 };
     userData.WriteString(line);
-    client.SendPacket(userData);
+    client.SendTCPPacket(userData);
 
     std::cout << "\x1B[2J\x1B[H"; //Clear console
 
@@ -77,7 +77,7 @@ int main()
 
         message.WriteString(line);
 
-        client.SendPacket(message);
+        client.SendTCPPacket(message);
         client.SendUDPPacket(message);
     }
 }

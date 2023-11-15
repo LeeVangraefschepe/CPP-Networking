@@ -21,8 +21,8 @@ Client::Client(int port, const std::string& serverIp, int packetBuffer)
     }
 
     //Create a socket for the client
-    m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (m_socket == INVALID_SOCKET)
+    m_TCPsocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (m_TCPsocket == INVALID_SOCKET)
     {
         std::cerr << "Error creating socket: " << WSAGetLastError() << std::endl;
         WSACleanup();
@@ -42,10 +42,10 @@ Client::Client(int port, const std::string& serverIp, int packetBuffer)
     m_pServerAdress->sin_port = htons(static_cast<u_short>(port));  //Port number of the server
     inet_pton(AF_INET, serverIp.c_str(), &m_pServerAdress->sin_addr);  //IP address of the server
 
-    if (connect(m_socket, reinterpret_cast<sockaddr*>(m_pServerAdress.get()), sizeof(sockaddr_in)) == SOCKET_ERROR)
+    if (connect(m_TCPsocket, reinterpret_cast<sockaddr*>(m_pServerAdress.get()), sizeof(sockaddr_in)) == SOCKET_ERROR)
     {
         std::cerr << "Error connecting to server: " << WSAGetLastError() << std::endl;
-        closesocket(m_socket);
+        closesocket(m_TCPsocket);
         WSACleanup();
         return;
     }
@@ -60,7 +60,8 @@ Client::~Client()
 {
     m_sendThread.request_stop();
     m_sendCondition.notify_one();
-    closesocket(m_socket);
+    closesocket(m_TCPsocket);
+    closesocket(m_UDPsocket);
     WSACleanup();
 }
 
@@ -71,7 +72,7 @@ void Client::Run(float ticks)
     m_clientThread.detach();
 }
 
-void Client::SendPacket(const Packet& packet)
+void Client::SendTCPPacket(const Packet& packet)
 {
     m_packetSender->Add(InternalPacket{packet});
     m_sendCondition.notify_one();
@@ -103,12 +104,12 @@ void Client::HandleSend()
         }
         else
         {
-            if (send(m_socket, data.Packet.Data(), data.Packet.Length(), 0) == SOCKET_ERROR)
+            if (send(m_TCPsocket, data.Packet.Data(), data.Packet.Length(), 0) == SOCKET_ERROR)
             {
 #ifdef _DEBUG
                 std::cerr << "Error sending message: " << WSAGetLastError() << std::endl;
 #endif
-                closesocket(m_socket);
+                closesocket(m_TCPsocket);
                 WSACleanup();
                 m_connected = false;
             }
@@ -142,13 +143,13 @@ bool Client::HandleReceive()
 {
     // Receive a response from the server
     std::array<char, 256> buffer{};
-    const int bytesReceived = recv(m_socket, buffer.data(), static_cast<int>(buffer.size()), 0);
+    const int bytesReceived = recv(m_TCPsocket, buffer.data(), static_cast<int>(buffer.size()), 0);
     if (bytesReceived == SOCKET_ERROR)
     {
 #ifdef _DEBUG
         std::cerr << "Error receiving response: " << WSAGetLastError() << std::endl;
 #endif
-        closesocket(m_socket);
+        closesocket(m_TCPsocket);
         WSACleanup();
         m_connected = false;
         return false;
@@ -158,7 +159,7 @@ bool Client::HandleReceive()
 #ifdef _DEBUG
         std::cerr << "No data received closing socket..." << std::endl;
 #endif
-        closesocket(m_socket);
+        closesocket(m_TCPsocket);
         WSACleanup();
         m_connected = false;
         return false;

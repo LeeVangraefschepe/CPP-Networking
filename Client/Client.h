@@ -21,10 +21,9 @@ public:
 	Client& operator= (const Client&&) = delete;
 
 	bool GetPacket(Packet& packet) const { return m_packetReceiver->Get(packet); }
-	void SendPacket(const Packet& packet);
+	void SendTCPPacket(const Packet& packet);
 	void SendUDPPacket(const Packet& packet);
 	void Run(float ticks);
-	void HandleSend();
 	bool IsConnected() const;
 
 private:
@@ -36,6 +35,7 @@ private:
 
 	void InternalRun(float ticks);
 	bool HandleReceive();
+	void HandleSend();
 
 	std::jthread m_clientThread{};
 
@@ -43,7 +43,7 @@ private:
 	std::condition_variable m_sendCondition{};
 
 	bool m_connected{false};
-	unsigned long long m_socket{};
+	unsigned long long m_TCPsocket{};
 	unsigned long long m_UDPsocket{};
 	std::unique_ptr<sockaddr_in> m_pServerAdress;
 
