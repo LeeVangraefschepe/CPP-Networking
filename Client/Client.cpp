@@ -28,14 +28,21 @@ Client::Client(int port, const std::string& serverIp, int packetBuffer)
         WSACleanup();
         return;
     }
+    m_UDPsocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (m_UDPsocket == INVALID_SOCKET)
+    {
+        perror("Error creating UDP socket");
+        WSACleanup();
+        return;
+    }
 
     //Connect to the server
-    sockaddr_in serverAddress{};
-    serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(static_cast<u_short>(port));  //Port number of the server
-    inet_pton(AF_INET, serverIp.c_str(), &serverAddress.sin_addr);  //IP address of the server
+    m_pServerAdress = std::make_unique<sockaddr_in>();
+    m_pServerAdress->sin_family = AF_INET;
+    m_pServerAdress->sin_port = htons(static_cast<u_short>(port));  //Port number of the server
+    inet_pton(AF_INET, serverIp.c_str(), &m_pServerAdress->sin_addr);  //IP address of the server
 
-    if (connect(m_socket, reinterpret_cast<sockaddr*>(&serverAddress), sizeof(serverAddress)) == SOCKET_ERROR)
+    if (connect(m_socket, reinterpret_cast<sockaddr*>(m_pServerAdress.get()), sizeof(sockaddr_in)) == SOCKET_ERROR)
     {
         std::cerr << "Error connecting to server: " << WSAGetLastError() << std::endl;
         closesocket(m_socket);
@@ -68,6 +75,14 @@ void Client::SendPacket(const Packet& packet)
 {
     m_packetSender->Add(packet);
     m_sendCondition.notify_one();
+}
+
+void Client::SendUDPPacket(Packet& packet)
+{
+    int bytesSentUDP = sendto(m_UDPsocket, packet.Data(), packet.Length(), 0, reinterpret_cast<struct sockaddr*>(m_pServerAdress.get()), sizeof(sockaddr_in));
+    if (bytesSentUDP == SOCKET_ERROR) {
+        perror("Error sending data to UDP server");
+    }
 }
 
 void Client::HandleSend()

@@ -28,7 +28,7 @@ int main()
     std::getline(std::cin, line);
     if (line.empty()) { line = "127.0.0.1"; }
 
-    Client client{ 12345, line };
+    Client client{ 1234, line };
     client.Run(20.f);
 
     std::cout << YELLOW << "Fill in your username:\n" << RESET;
@@ -78,5 +78,6 @@ int main()
         message.WriteString(line);
 
         client.SendPacket(message);
+        client.SendUDPPacket(message);
     }
 }

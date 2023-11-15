@@ -7,6 +7,8 @@
 #include "Packet.h"
 #include "EventPool.h"
 
+struct sockaddr_in;
+
 class Client final
 {
 public:
@@ -20,6 +22,7 @@ public:
 
 	bool GetPacket(Packet& packet) const { return m_packetReceiver->Get(packet); }
 	void SendPacket(const Packet& packet);
+	void SendUDPPacket(Packet& packet);
 	void Run(float ticks);
 	void HandleSend();
 	bool IsConnected();
@@ -35,6 +38,9 @@ private:
 
 	bool m_connected{false};
 	unsigned long long m_socket{};
+	unsigned long long m_UDPsocket{};
+	std::unique_ptr<sockaddr_in> m_pServerAdress;
+
 	std::unique_ptr<EventPool<Packet>> m_packetReceiver;
 	std::unique_ptr<EventPool<Packet>> m_packetSender;
 
